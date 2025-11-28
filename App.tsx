@@ -1,0 +1,76 @@
+import React, { useState } from 'react';
+import { AppState, ParsedReport } from './types';
+import { generateReport } from './services/geminiService';
+import { SearchForm } from './components/SearchForm';
+import { ReportDisplay } from './components/ReportDisplay';
+import { LoadingState } from './components/LoadingState';
+
+const App: React.FC = () => {
+  const [appState, setAppState] = useState<AppState>(AppState.IDLE);
+  const [report, setReport] = useState<ParsedReport | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGenerate = async (topic: string, sinceDate: string) => {
+    setAppState(AppState.LOADING);
+    setError(null);
+    try {
+      const data = await generateReport({ topic, sinceDate });
+      setReport(data);
+      setAppState(AppState.SUCCESS);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to generate the report. Please verify your API Key and try again.");
+      setAppState(AppState.ERROR);
+    }
+  };
+
+  const handleReset = () => {
+    setAppState(AppState.IDLE);
+    setReport(null);
+    setError(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 selection:bg-brand-500 selection:text-white">
+      {/* Background decoration */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-900/20 rounded-full blur-3xl transform -translate-y-1/2"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent-900/10 rounded-full blur-3xl transform translate-y-1/2"></div>
+      </div>
+
+      <main className="relative z-10 px-4 py-8 md:py-16 max-w-5xl mx-auto">
+        
+        {appState === AppState.IDLE && (
+          <div className="flex flex-col items-center justify-center min-h-[60vh]">
+             <SearchForm onGenerate={handleGenerate} appState={appState} />
+          </div>
+        )}
+
+        {appState === AppState.LOADING && (
+          <LoadingState />
+        )}
+
+        {appState === AppState.SUCCESS && report && (
+          <ReportDisplay report={report} onReset={handleReset} />
+        )}
+
+        {appState === AppState.ERROR && (
+          <div className="w-full max-w-lg mx-auto text-center mt-20">
+            <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-6">
+              <h3 className="text-red-400 font-bold text-lg mb-2">Temporal Anomaly Detected</h3>
+              <p className="text-slate-300 mb-6">{error}</p>
+              <button 
+                onClick={handleReset}
+                className="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-medium transition-colors"
+              >
+                Return to Safety
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default App;
