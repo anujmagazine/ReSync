@@ -26,19 +26,26 @@ const PROMPT_TEMPLATE = `
 * **Headline 2:** Description.
 * **Headline 3:** Description.
 
-## 📅 Timeline of Evolution
-[Create a Markdown Table to show the progression.]
-| Date (Approx) | Update/Event | Why It Matters |
+## 🔄 Then vs. Now (The Paradigm Shift)
+[Compare how things were done roughly around the "Since Date" versus how they are done today. Focus on workflows, tools, or philosophies.]
+| The Old Way | The New Way | Why It Changed |
 | :--- | :--- | :--- |
-| [Date] | [Name] | [One-sentence impact] |
+| [Old concept] | [New concept] | [Brief benefit] |
+... (add 3 rows)
+
+## 📅 Timeline of Evolution
+[Create a Markdown Table to show the progression. **CRITICAL: Write the 'What Happened' column in simple, plain English suitable for a non-expert.**]
+| Date (Approx) | What Happened | Why It Matters |
+| :--- | :--- | :--- |
+| [Date] | [Simple Description] | [One-sentence impact] |
 ... (add 3-5 rows)
 
 ## 🧠 New Terminology (Jargon Buster)
-[List 3-5 new buzzwords. Use exactly this format:]
+[List 3-5 *new* buzzwords that have emerged since the date. **If there are no major new terms, output "None".**]
 * **[Term]:** [Simple definition]
 
-## 🔮 Current State & Future Outlook
-[One paragraph explaining where things stand right now and what is coming next.]
+## ⚡ The New Standard (Current State)
+[One paragraph describing the "default" way of doing things today. What is the modern stack, standard approach, or current consensus?]
 
 ---
 **Input Variables:**
@@ -89,7 +96,8 @@ const parseReportContent = (text: string, sources: GroundingSource[]): ParsedRep
     bigThree: [],
     timeline: [],
     terminology: [],
-    outlook: "",
+    currentStand: "",
+    thenVsNow: [],
     raw: text,
     sources
   };
@@ -113,10 +121,20 @@ const parseReportContent = (text: string, sources: GroundingSource[]): ParsedRep
         });
       }
     }
+    else if (header.includes("Then vs. Now")) {
+       const rows = content.split('\n').filter(line => line.includes('|') && !line.includes('---'));
+       const dataRows = rows.slice(1);
+       report.thenVsNow = dataRows.map(row => {
+        const cols = row.split('|').map(c => c.trim()).filter(c => c !== '');
+        return {
+          old: cols[0] || '',
+          new: cols[1] || '',
+          benefit: cols[2] || ''
+        };
+       }).filter(r => r.old && r.new);
+    }
     else if (header.includes("Timeline of Evolution")) {
-      // Simple markdown table parser
       const rows = content.split('\n').filter(line => line.includes('|') && !line.includes('---'));
-      // Skip header row usually (Date, Update, Impact)
       const dataRows = rows.slice(1); 
       report.timeline = dataRows.map(row => {
         const cols = row.split('|').map(c => c.trim()).filter(c => c !== '');
@@ -128,16 +146,18 @@ const parseReportContent = (text: string, sources: GroundingSource[]): ParsedRep
       }).filter(r => r.date && r.event);
     }
     else if (header.includes("New Terminology")) {
-      const items = content.match(/^\* \*\*(.*?):\*\* (.*)$/gm);
-      if (items) {
-        report.terminology = items.map(item => {
-          const match = item.match(/^\* \*\*(.*?):\*\* (.*)$/);
-          return match ? { term: match[1], definition: match[2] } : { term: "", definition: "" };
-        });
+      if (!content.includes("None")) {
+        const items = content.match(/^\* \*\*(.*?):\*\* (.*)$/gm);
+        if (items) {
+          report.terminology = items.map(item => {
+            const match = item.match(/^\* \*\*(.*?):\*\* (.*)$/);
+            return match ? { term: match[1], definition: match[2] } : { term: "", definition: "" };
+          });
+        }
       }
     }
-    else if (header.includes("Current State & Future Outlook")) {
-      report.outlook = content;
+    else if (header.includes("The New Standard")) {
+      report.currentStand = content;
     }
   });
 

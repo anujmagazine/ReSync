@@ -3,7 +3,8 @@ export interface ParsedReport {
   bigThree: BigThreeItem[];
   timeline: TimelineItem[];
   terminology: TerminologyItem[];
-  outlook: string;
+  currentStand: string;
+  thenVsNow: ThenVsNowItem[];
   raw: string;
   sources?: GroundingSource[];
 }
@@ -22,6 +23,12 @@ export interface TimelineItem {
 export interface TerminologyItem {
   term: string;
   definition: string;
+}
+
+export interface ThenVsNowItem {
+  old: string;
+  new: string;
+  benefit: string;
 }
 
 export interface GroundingSource {
