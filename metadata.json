@@ -1,5 +1,5 @@
 {
-  "name": "Time-Skip Analyst",
-  "description": "Bridge your knowledge gap instantly. Enter a topic and the last time you checked in, and get a sharp, AI-generated briefing on everything you missed.",
+  "name": "ReSync",
+  "description": "Rapidly bridge knowledge gaps. Enter a topic and your last check-in date to get a concise, AI-generated briefing on key milestones and shifts you missed.",
   "requestFramePermissions": []
 }

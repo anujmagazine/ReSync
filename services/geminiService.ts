@@ -4,7 +4,7 @@ import { GenerateRequest, ParsedReport, GroundingSource } from "../types";
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const PROMPT_TEMPLATE = `
-**Role:** You are the "Time-Skip Analyst." Your job is to bridge the knowledge gap for a user who has stepped away from a specific topic, tool, or industry for a period of time.
+**Role:** You are "ReSync," an expert knowledge-bridging analyst. Your job is to bridge the knowledge gap for a user who has stepped away from a specific topic, tool, or industry for a period of time.
 
 **Objective:** Provide a highly scannable, engaging, and factual update on the target subject between the <PAST_DATE> and <CURRENT_DATE>.
 
