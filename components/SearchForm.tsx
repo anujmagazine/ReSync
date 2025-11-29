@@ -20,22 +20,22 @@ export const SearchForm: React.FC<SearchFormProps> = ({ onGenerate, appState }) 
   const isLoading = appState === AppState.LOADING;
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl relative overflow-hidden group">
+    <div className="w-full max-w-2xl mx-auto bg-white rounded-2xl p-8 border border-slate-200 shadow-xl relative overflow-hidden group">
        {/* Decorative gradient glow */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 via-accent-500 to-brand-500 opacity-80" />
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-400 via-accent-400 to-brand-400 opacity-80" />
       
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 mb-3 tracking-tight">
+        <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 mb-3 tracking-tight">
           ReSync
         </h1>
-        <p className="text-slate-400 max-w-lg mx-auto leading-relaxed">
+        <p className="text-slate-500 max-w-lg mx-auto leading-relaxed">
           Rapidly bridge your knowledge gaps. Enter a topic and the date you last followed it to receive a concise, AI-generated briefing on the key milestones, shifts, and terminology you missed.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
-          <label htmlFor="topic" className="block text-sm font-medium text-slate-300">
+          <label htmlFor="topic" className="block text-sm font-medium text-slate-700">
             What topic did you miss?
           </label>
           <input
@@ -45,13 +45,13 @@ export const SearchForm: React.FC<SearchFormProps> = ({ onGenerate, appState }) 
             onChange={(e) => setTopic(e.target.value)}
             placeholder="e.g. React.js, SEO, The Marvel Cinematic Universe"
             disabled={isLoading}
-            className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all focus:bg-white"
             required
           />
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="date" className="block text-sm font-medium text-slate-300">
+          <label htmlFor="date" className="block text-sm font-medium text-slate-700">
             When was the last time you checked in?
           </label>
           <input
@@ -60,7 +60,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({ onGenerate, appState }) 
             value={sinceDate}
             onChange={(e) => setSinceDate(e.target.value)}
             disabled={isLoading}
-            className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all [color-scheme:dark]"
+            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all focus:bg-white"
             required
           />
         </div>
@@ -70,8 +70,8 @@ export const SearchForm: React.FC<SearchFormProps> = ({ onGenerate, appState }) 
           disabled={isLoading || !topic || !sinceDate}
           className={`w-full py-4 px-6 rounded-xl font-bold text-lg text-white transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg
             ${isLoading 
-              ? 'bg-slate-700 cursor-not-allowed opacity-70' 
-              : 'bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 shadow-brand-900/50'
+              ? 'bg-slate-300 cursor-not-allowed opacity-70' 
+              : 'bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 shadow-brand-500/30'
             }`}
         >
           {isLoading ? (

@@ -31,11 +31,11 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 selection:bg-brand-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-brand-200 selection:text-brand-900">
       {/* Background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-900/20 rounded-full blur-3xl transform -translate-y-1/2"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent-900/10 rounded-full blur-3xl transform translate-y-1/2"></div>
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-200/40 rounded-full blur-3xl transform -translate-y-1/2"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent-200/40 rounded-full blur-3xl transform translate-y-1/2"></div>
       </div>
 
       <main className="relative z-10 px-4 py-8 md:py-16 max-w-5xl mx-auto">
@@ -56,12 +56,12 @@ const App: React.FC = () => {
 
         {appState === AppState.ERROR && (
           <div className="w-full max-w-lg mx-auto text-center mt-20">
-            <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-6">
-              <h3 className="text-red-400 font-bold text-lg mb-2">Temporal Anomaly Detected</h3>
-              <p className="text-slate-300 mb-6">{error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+              <h3 className="text-red-600 font-bold text-lg mb-2">Temporal Anomaly Detected</h3>
+              <p className="text-slate-600 mb-6">{error}</p>
               <button 
                 onClick={handleReset}
-                className="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-medium transition-colors"
+                className="px-6 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-slate-700 font-medium transition-colors"
               >
                 Return to Safety
               </button>
