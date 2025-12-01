@@ -6,6 +6,17 @@ interface SearchFormProps {
   appState: AppState;
 }
 
+const EXAMPLE_TOPICS = [
+  "Virat Kohli's Career",
+  "OpenAI & ChatGPT", 
+  "Manchester United",
+  "The Marvel Cinematic Universe",
+  "Apple's Innovation",
+  "Taylor Swift",
+  "React.js Ecosystem",
+  "Game of Thrones"
+];
+
 export const SearchForm: React.FC<SearchFormProps> = ({ onGenerate, appState }) => {
   const [topic, setTopic] = useState('');
   const [sinceDate, setSinceDate] = useState('');
@@ -43,11 +54,25 @@ export const SearchForm: React.FC<SearchFormProps> = ({ onGenerate, appState }) 
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g. React.js, SEO, The Marvel Cinematic Universe"
+            placeholder="e.g. Virat Kohli, Tesla, The MCU, Bitcoin..."
             disabled={isLoading}
             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all focus:bg-white"
             required
           />
+          <div className="flex flex-wrap gap-2 pt-1">
+            <span className="text-xs font-medium text-slate-400 self-center">Try:</span>
+            {EXAMPLE_TOPICS.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTopic(t)}
+                disabled={isLoading}
+                className="text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200 border border-slate-200 transition-all disabled:opacity-50"
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-2">
