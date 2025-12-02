@@ -6,7 +6,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const PROMPT_TEMPLATE = `
 **Role:** You are "ReSync," an expert knowledge-bridging analyst. Your job is to bridge the knowledge gap for a user who has stepped away from a specific topic, tool, or industry for a period of time.
 
-**Objective:** Provide a highly scannable, engaging, and factual update on the target subject between the <PAST_DATE> and <CURRENT_DATE>.
+**Objective:** Provide a highly scannable, engaging, and factual update on the target subject strictly between the <PAST_DATE> and <CURRENT_DATE>.
 
 **Tone:** Sharp, energetic, conversational, and direct. Avoid academic jargon unless defining it.
 
@@ -14,6 +14,7 @@ const PROMPT_TEMPLATE = `
 1.  **Search First:** You must utilize Google Search to find real, dated events and releases.
 2.  **No Fluff:** Do not use filler introductions. Start immediately with the content.
 3.  **Strict Formatting:** You must use the structure defined below accurately.
+4.  **Date Strictness:** **DO NOT** include any events, releases, or news that occurred **before** {{SINCE_DATE}}. Start your timeline and analysis strictly AFTER this date.
 
 **Output Structure:**
 
@@ -21,20 +22,20 @@ const PROMPT_TEMPLATE = `
 [Provide a 2-sentence summary of the biggest shift in "vibe" or direction for this topic.]
 
 ## 🏆 The "Big Three" (Major Milestones)
-[Identify the top 3 most critical updates. Use exactly this format:]
+[Identify the top 3 most critical updates that happened AFTER {{SINCE_DATE}}. Use exactly this format:]
 * **Headline 1:** Description.
 * **Headline 2:** Description.
 * **Headline 3:** Description.
 
 ## 🔄 Then vs. Now (The Paradigm Shift)
-[Compare how things were done roughly around the "Since Date" versus how they are done today. Focus on workflows, tools, or philosophies.]
+[Compare how things were done roughly around {{SINCE_DATE}} versus how they are done today. Focus on workflows, tools, or philosophies.]
 | The Old Way | The New Way | Why It Changed |
 | :--- | :--- | :--- |
 | [Old concept] | [New concept] | [Brief benefit] |
 ... (add 3 rows)
 
 ## 📅 Timeline of Evolution
-[Create a Markdown Table to show the progression. **CRITICAL: Write the 'What Happened' column in simple, plain English suitable for a non-expert.**]
+[Create a Markdown Table to show the progression. **CRITICAL: Only list events that happened AFTER {{SINCE_DATE}}. Do not include earlier context.** Write the 'What Happened' column in simple, plain English suitable for a non-expert.]
 | Date (Approx) | What Happened | Why It Matters |
 | :--- | :--- | :--- |
 | [Date] | [Simple Description] | [One-sentence impact] |
@@ -51,16 +52,17 @@ const PROMPT_TEMPLATE = `
 **Input Variables:**
 * **Current Date:** {{CURRENT_DATE}}
 * **Topic:** {{TOPIC}}
-* **Since:** {{SINCE_DATE}}
+* **Since (Start Date):** {{SINCE_DATE}}
 `;
 
 export const generateReport = async (request: GenerateRequest): Promise<ParsedReport> => {
-  const currentDate = new Date().toLocaleDateString();
+  // Use ISO format YYYY-MM-DD to match the input date format and avoid locale ambiguity
+  const currentDate = new Date().toISOString().split('T')[0];
   
   const prompt = PROMPT_TEMPLATE
     .replace('{{CURRENT_DATE}}', currentDate)
     .replace('{{TOPIC}}', request.topic)
-    .replace('{{SINCE_DATE}}', request.sinceDate);
+    .replace(/{{SINCE_DATE}}/g, request.sinceDate); // Global replace for multiple occurrences
 
   try {
     const response = await ai.models.generateContent({
