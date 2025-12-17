@@ -109,23 +109,26 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onReset })
     if (!email) return;
 
     setEmailStatus('sending');
-    // Simulate API call for sending email
+    
+    // Draft the email content
+    const draftedBody = formatReportForEmail(report);
+    const subject = `ReSync Briefing: Latest updates on your topic`;
+    
+    // We use mailto to ensure the user can actually "send" it from their own device
+    const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(draftedBody)}`;
+    
     setTimeout(() => {
       setEmailStatus('sent');
-      const draftedBody = formatReportForEmail(report);
-      console.log(`Simulated sending to ${email}:\n`, draftedBody);
       
-      // Also trigger a mailto as a fallback/real action for the user
-      const subject = encodeURIComponent(`ReSync Briefing: Latest updates on your topic`);
-      const body = encodeURIComponent(draftedBody);
-      // window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+      // Trigger the mail client
+      window.location.href = mailtoUrl;
       
       setTimeout(() => {
         setIsEmailModalOpen(false);
         setEmailStatus('idle');
         setEmail('');
-      }, 2000);
-    }, 1500);
+      }, 3000);
+    }, 1200);
   };
 
   if (!report.catchUp && !report.currentStand) {
@@ -335,8 +338,8 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onReset })
                 <div className="flex justify-center mb-4">
                   <SectionIcon type="check" />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-2">Briefing Sent!</h3>
-                <p className="text-slate-500">Your professional update has been dispatched to {email}.</p>
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">Email Client Opened!</h3>
+                <p className="text-slate-500">We've generated the draft. Check your email app to finalize and send.</p>
               </div>
             ) : (
               <>
@@ -346,7 +349,7 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onReset })
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-slate-900">Email Report</h3>
-                    <p className="text-xs text-slate-500">Send a well-drafted summary to any inbox.</p>
+                    <p className="text-xs text-slate-500">Enter recipient email to draft a briefing.</p>
                   </div>
                 </div>
 
@@ -378,9 +381,10 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onReset })
                         ${emailStatus === 'sending' ? 'bg-slate-400' : 'bg-brand-600 hover:bg-brand-500'}
                       `}
                     >
-                      {emailStatus === 'sending' ? 'Sending...' : 'Send Briefing'}
+                      {emailStatus === 'sending' ? 'Opening Client...' : 'Draft Briefing'}
                     </button>
                   </div>
+                  <p className="text-[10px] text-center text-slate-400">Note: This will open your default email app with the content pre-filled.</p>
                 </form>
               </>
             )}

@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { GenerateRequest, ParsedReport, GroundingSource } from "../types";
 
@@ -6,7 +7,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const PROMPT_TEMPLATE = `
 **Role:** You are "ReSync," an expert knowledge-bridging analyst. Your job is to bridge the knowledge gap for a user who has stepped away from a specific topic, tool, or industry for a period of time.
 
-**Objective:** Provide a highly scannable, engaging, and factual update on the target subject strictly between the <PAST_DATE> and <CURRENT_DATE>.
+**Objective:** Provide a highly scannable, engaging, and factual update on the target subject strictly between the {{SINCE_DATE}} and {{CURRENT_DATE}}.
 
 **Tone:** Sharp, energetic, conversational, and direct. Avoid academic jargon unless defining it.
 
@@ -14,7 +15,7 @@ const PROMPT_TEMPLATE = `
 1.  **Search First:** You must utilize Google Search to find real, dated events and releases.
 2.  **No Fluff:** Do not use filler introductions. Start immediately with the content.
 3.  **Strict Formatting:** You must use the structure defined below accurately.
-4.  **Date Strictness:** **DO NOT** include any events, releases, or news that occurred **before** {{SINCE_DATE}}. Start your timeline and analysis strictly AFTER this date.
+4.  **Date Strictness (CRITICAL):** **DO NOT** include any events, releases, or news that occurred **before** {{SINCE_DATE}}. If an event happened in January but the user asked for September, you MUST exclude it. Start your timeline and analysis strictly AFTER {{SINCE_DATE}}.
 
 **Output Structure:**
 
@@ -28,25 +29,25 @@ const PROMPT_TEMPLATE = `
 * **Headline 3:** Description.
 
 ## 🔄 Then vs. Now (The Paradigm Shift)
-[Compare how things were done roughly around {{SINCE_DATE}} versus how they are done today. Focus on workflows, tools, or philosophies.]
+[Compare how things were done roughly around {{SINCE_DATE}} versus how they are done today.]
 | The Old Way | The New Way | Why It Changed |
 | :--- | :--- | :--- |
 | [Old concept] | [New concept] | [Brief benefit] |
 ... (add 3 rows)
 
 ## 📅 Timeline of Evolution
-[Create a Markdown Table to show the progression. **CRITICAL: Only list events that happened AFTER {{SINCE_DATE}}. Do not include earlier context.** Write the 'What Happened' column in simple, plain English suitable for a non-expert.]
+[Create a Markdown Table to show the progression. **CRITICAL: Only list events that happened AFTER {{SINCE_DATE}}.**]
 | Date (Approx) | What Happened | Why It Matters |
 | :--- | :--- | :--- |
 | [Date] | [Simple Description] | [One-sentence impact] |
 ... (add 3-5 rows)
 
 ## 🧠 New Terminology (Jargon Buster)
-[List 3-5 *new* buzzwords that have emerged since the date. **If there are no major new terms, output "None".**]
+[List 3-5 *new* buzzwords that have emerged since the date. If there are no major new terms, output "None".]
 * **[Term]:** [Simple definition]
 
 ## ⚡ The New Standard (Current State)
-[One paragraph describing the "default" way of doing things today. What is the modern stack, standard approach, or current consensus?]
+[One paragraph describing the "default" way of doing things today.]
 
 ---
 **Input Variables:**
@@ -56,27 +57,24 @@ const PROMPT_TEMPLATE = `
 `;
 
 export const generateReport = async (request: GenerateRequest): Promise<ParsedReport> => {
-  // Use ISO format YYYY-MM-DD to match the input date format and avoid locale ambiguity
   const currentDate = new Date().toISOString().split('T')[0];
   
   const prompt = PROMPT_TEMPLATE
-    .replace('{{CURRENT_DATE}}', currentDate)
-    .replace('{{TOPIC}}', request.topic)
-    .replace(/{{SINCE_DATE}}/g, request.sinceDate); // Global replace for multiple occurrences
+    .replace(/{{CURRENT_DATE}}/g, currentDate)
+    .replace(/{{TOPIC}}/g, request.topic)
+    .replace(/{{SINCE_DATE}}/g, request.sinceDate);
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
-        thinkingConfig: { thinkingBudget: 0 } // Disable thinking for faster response on simple structure
+        thinkingConfig: { thinkingBudget: 0 }
       }
     });
 
     const text = response.text || "No content generated.";
-    
-    // Extract sources if available
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     const sources: GroundingSource[] = groundingChunks
       .filter((chunk: any) => chunk.web?.uri)

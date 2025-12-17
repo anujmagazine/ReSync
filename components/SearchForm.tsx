@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { AppState } from '../types';
 
@@ -8,13 +9,15 @@ interface SearchFormProps {
 
 const EXAMPLE_TOPICS = [
   "Virat Kohli's Career",
-  "OpenAI & ChatGPT", 
+  "Apple in AI",
+  "NVIDIA & GPU Tech",
+  "OpenAI's O1 Model",
   "Manchester United",
-  "The Marvel Cinematic Universe",
-  "Apple's Innovation",
-  "Taylor Swift",
-  "React.js Ecosystem",
-  "Game of Thrones"
+  "Tesla FSD Progress",
+  "The MCU Phase 5",
+  "Taylor Swift's Eras",
+  "React.js 19",
+  "SpaceX Starship"
 ];
 
 export const SearchForm: React.FC<SearchFormProps> = ({ onGenerate, appState }) => {
@@ -40,7 +43,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({ onGenerate, appState }) 
           ReSync
         </h1>
         <p className="text-slate-500 max-w-lg mx-auto leading-relaxed">
-          Rapidly bridge your knowledge gaps. Enter a topic and the date you last followed it to receive a concise, AI-generated briefing on the key milestones, shifts, and terminology you missed.
+          Rapidly bridge your knowledge gaps. Enter a topic and the date you last followed it to receive a concise, AI-generated briefing.
         </p>
       </div>
 
@@ -54,7 +57,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({ onGenerate, appState }) 
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g. Virat Kohli, Tesla, The MCU, Bitcoin..."
+            placeholder="e.g. Virat Kohli, Apple in AI, Bitcoin..."
             disabled={isLoading}
             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all focus:bg-white"
             required
