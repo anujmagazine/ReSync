@@ -5,6 +5,7 @@ import { ParsedReport } from '../types';
 interface ReportDisplayProps {
   report: ParsedReport;
   topic: string;
+  sinceDate: string;
   onReset: () => void;
 }
 
@@ -75,9 +76,18 @@ const SectionIcon = ({ type }: { type: 'rocket' | 'trophy' | 'calendar' | 'brain
   }
 };
 
-export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, topic, onReset }) => {
+export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, topic, sinceDate, onReset }) => {
   const reportRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
 
   const handleDownloadPDF = async () => {
     if (!reportRef.current || isDownloading) return;
@@ -151,14 +161,25 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, topic, onR
 
       {/* The Actual Report Content (Targeted for PDF) */}
       <div ref={reportRef} className="space-y-12 p-2 bg-slate-50">
-        {/* Print Header (Only visible in PDF/Print) */}
-        <div className="hidden print-only-header block mb-8 border-b-2 border-slate-900 pb-4">
-          <div className="flex justify-between items-end">
-            <div>
-              <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">ReSync Briefing</h1>
-              <p className="text-slate-500 font-bold uppercase tracking-widest text-xs mt-1">Topic: {topic}</p>
-            </div>
-            <p className="text-slate-400 text-xs font-mono">{new Date().toLocaleDateString()}</p>
+        
+        {/* Report Header: Subject & Date Range */}
+        <div className="relative mb-12 border-l-4 border-brand-500 pl-6 py-2">
+          <div className="absolute -left-[14px] top-0 bottom-0 w-2 bg-brand-500 rounded-full opacity-20"></div>
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-2 leading-tight">
+            {topic}
+          </h1>
+          <div className="flex flex-wrap items-center gap-3 text-slate-500 font-medium">
+            <span className="px-3 py-1 bg-brand-50 text-brand-700 rounded-full text-xs font-bold border border-brand-100 uppercase tracking-widest">
+              Briefing Update
+            </span>
+            <span className="flex items-center gap-2 text-sm">
+              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+              Bridge Gap Since: <strong className="text-slate-700">{formatDate(sinceDate)}</strong>
+            </span>
+            <span className="flex items-center gap-2 text-sm">
+              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+              Current Date: <strong className="text-slate-700">{formatDate(new Date().toISOString())}</strong>
+            </span>
           </div>
         </div>
 
@@ -325,20 +346,10 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, topic, onR
         )}
 
         {/* Footer Branding (PDF Only) */}
-        <div className="hidden print-only-header block mt-12 pt-4 border-t text-center text-[10px] text-slate-400">
+        <div className="mt-12 pt-4 border-t text-center text-[10px] text-slate-400">
           This briefing was intelligently curated by ReSync using the Gemini 2.5 Flash API.
         </div>
       </div>
-      
-      {/* Internal Style for Print Layout */}
-      <style>{`
-        @media print {
-          .print-only-header { display: block !important; }
-        }
-        /* Extra assurance for html2pdf to show these when generating */
-        .pdf-header-visible { display: block !important; }
-      `}</style>
-
     </div>
   );
 };

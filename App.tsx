@@ -10,14 +10,16 @@ const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
   const [report, setReport] = useState<ParsedReport | null>(null);
   const [currentTopic, setCurrentTopic] = useState<string>('');
+  const [sinceDate, setSinceDate] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = async (topic: string, sinceDate: string) => {
+  const handleGenerate = async (topic: string, date: string) => {
     setAppState(AppState.LOADING);
     setCurrentTopic(topic);
+    setSinceDate(date);
     setError(null);
     try {
-      const data = await generateReport({ topic, sinceDate });
+      const data = await generateReport({ topic, sinceDate: date });
       setReport(data);
       setAppState(AppState.SUCCESS);
     } catch (err) {
@@ -31,6 +33,7 @@ const App: React.FC = () => {
     setAppState(AppState.IDLE);
     setReport(null);
     setCurrentTopic('');
+    setSinceDate('');
     setError(null);
   };
 
@@ -55,7 +58,12 @@ const App: React.FC = () => {
         )}
 
         {appState === AppState.SUCCESS && report && (
-          <ReportDisplay report={report} topic={currentTopic} onReset={handleReset} />
+          <ReportDisplay 
+            report={report} 
+            topic={currentTopic} 
+            sinceDate={sinceDate} 
+            onReset={handleReset} 
+          />
         )}
 
         {appState === AppState.ERROR && (
