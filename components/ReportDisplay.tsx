@@ -1,13 +1,17 @@
 
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { ParsedReport } from '../types';
 
 interface ReportDisplayProps {
   report: ParsedReport;
+  topic: string;
   onReset: () => void;
 }
 
-const SectionIcon = ({ type }: { type: 'rocket' | 'trophy' | 'calendar' | 'brain' | 'flash' | 'sync' | 'pdf' | 'check' }) => {
+// Global declaration for the html2pdf library added via CDN
+declare var html2pdf: any;
+
+const SectionIcon = ({ type }: { type: 'rocket' | 'trophy' | 'calendar' | 'brain' | 'flash' | 'sync' | 'pdf' | 'check' | 'loader' }) => {
   switch (type) {
     case 'rocket':
       return (
@@ -53,6 +57,13 @@ const SectionIcon = ({ type }: { type: 'rocket' | 'trophy' | 'calendar' | 'brain
           <path d="M12.971 1.816A5.23 5.23 0 0114.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 013.434 1.279 9.768 9.768 0 00-6.963-6.963z" />
         </svg>
       );
+    case 'loader':
+      return (
+        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      );
     case 'check':
       return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-green-500">
@@ -64,12 +75,41 @@ const SectionIcon = ({ type }: { type: 'rocket' | 'trophy' | 'calendar' | 'brain
   }
 };
 
-export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onReset }) => {
-  const handleDownloadPDF = () => {
-    // The most reliable way in a frontend-only app to "download as PDF" with 100% style fidelity 
-    // is to trigger the browser's optimized print engine. 
-    // We handle the styling via @media print in the component.
-    window.print();
+export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, topic, onReset }) => {
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    if (!reportRef.current || isDownloading) return;
+
+    try {
+      setIsDownloading(true);
+      
+      const element = reportRef.current;
+      const fileName = `ReSync_Report_${topic.replace(/\s+/g, '_')}.pdf`;
+
+      const options = {
+        margin: [0.5, 0.5],
+        filename: fileName,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true,
+          letterRendering: true,
+          scrollY: 0
+        },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      // Generate and save the PDF
+      await html2pdf().set(options).from(element).save();
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+      alert("Failed to generate PDF. You can also try using the browser's Print option (Ctrl+P / Cmd+P) and selecting 'Save as PDF'.");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   if (!report.catchUp && !report.currentStand) {
@@ -83,26 +123,10 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onReset })
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-12 animate-fade-in pb-16 report-container">
-      {/* Print-specific style block */}
-      <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          body { background: white !important; margin: 0 !important; padding: 20px !important; }
-          .report-container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
-          .bg-white { border: 1px solid #e2e8f0 !important; box-shadow: none !important; }
-          .shadow-xl, .shadow-sm, .shadow-md { box-shadow: none !important; }
-          .rounded-3xl { border-radius: 1rem !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          a { text-decoration: none !important; color: #0284c7 !important; }
-          .grid { display: block !important; }
-          .grid > div { margin-bottom: 1.5rem !important; page-break-inside: avoid; }
-          .timeline-item { page-break-inside: avoid; }
-        }
-      `}</style>
+    <div className="w-full max-w-4xl mx-auto space-y-12 animate-fade-in pb-16">
       
-      {/* Action Bar */}
-      <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 no-print">
+      {/* Action Bar (Not part of PDF) */}
+      <div className="flex flex-col md:flex-row md:justify-between items-center gap-4">
         <div className="flex items-center gap-6">
           <button 
             onClick={onReset} 
@@ -112,10 +136,12 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onReset })
           </button>
           <button 
             onClick={handleDownloadPDF}
-            className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-all shadow-md shadow-slate-200"
+            disabled={isDownloading}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-md shadow-slate-200 
+              ${isDownloading ? 'bg-slate-500 cursor-wait' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}
           >
-            <SectionIcon type="pdf" />
-            Download as PDF
+            {isDownloading ? <SectionIcon type="loader" /> : <SectionIcon type="pdf" />}
+            {isDownloading ? 'Generating PDF...' : 'Download as PDF'}
           </button>
         </div>
         <div className="flex flex-col items-end">
@@ -123,184 +149,196 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onReset })
         </div>
       </div>
 
-      {/* Print Header (Only visible when printing) */}
-      <div className="hidden print:block mb-8 border-b pb-4">
-        <h1 className="text-3xl font-bold text-slate-900">ReSync Briefing</h1>
-        <p className="text-slate-500 text-sm">Generated on {new Date().toLocaleDateString()}</p>
-      </div>
-
-      {/* 🚀 Catch Up - Hero Section */}
-      <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none transform translate-x-10 -translate-y-10 no-print">
-          <svg className="w-48 h-48 text-slate-900" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.95 1.47-8.95 4.47L2.95 15.47 12 11zm11 1.53l-2.95 1.47L12 18.53 3.95 14.53 1 16l11 5.5 11-5.5-1.05-1.47z"/></svg>
-        </div>
-        <div className="flex items-center gap-3 mb-6 relative z-10">
-          <div className="p-2 bg-brand-50 rounded-xl border border-brand-200">
-            <SectionIcon type="rocket" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">The 30-Second Catch-Up</h2>
-        </div>
-        <p className="text-xl text-slate-700 leading-relaxed font-medium relative z-10">
-          {report.catchUp}
-        </p>
-      </div>
-
-      {/* 🏆 Big Three */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {report.bigThree.map((item, index) => (
-          <div key={index} className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-yellow-400 hover:shadow-lg transition-all group flex flex-col shadow-sm">
-            <div className="flex items-center gap-3 mb-4 no-print">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-yellow-600 font-bold text-sm border border-slate-200 group-hover:bg-yellow-400 group-hover:text-white transition-colors">
-                {index + 1}
-              </span>
-              <div className="h-px bg-slate-200 flex-grow group-hover:bg-yellow-200 transition-colors"></div>
+      {/* The Actual Report Content (Targeted for PDF) */}
+      <div ref={reportRef} className="space-y-12 p-2 bg-slate-50">
+        {/* Print Header (Only visible in PDF/Print) */}
+        <div className="hidden print-only-header block mb-8 border-b-2 border-slate-900 pb-4">
+          <div className="flex justify-between items-end">
+            <div>
+              <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">ReSync Briefing</h1>
+              <p className="text-slate-500 font-bold uppercase tracking-widest text-xs mt-1">Topic: {topic}</p>
             </div>
-            <h3 className="font-bold text-lg text-slate-900 mb-3 group-hover:text-yellow-700 transition-colors">
-              <span className="hidden print:inline mr-2">{index + 1}.</span>
-              {item.title}
-            </h3>
-            <p className="text-slate-600 text-sm leading-relaxed flex-grow">{item.description}</p>
+            <p className="text-slate-400 text-xs font-mono">{new Date().toLocaleDateString()}</p>
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* 🔄 Then vs Now (Paradigm Shift) */}
-      {report.thenVsNow && report.thenVsNow.length > 0 && (
-        <div className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-xl break-inside-avoid">
-          <div className="p-8 pb-4 border-b border-slate-100 bg-slate-50/50">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-indigo-50 rounded-xl border border-indigo-200">
-                <SectionIcon type="sync" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900">Then vs. Now</h2>
+        {/* 🚀 Catch Up - Hero Section */}
+        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl relative overflow-hidden break-inside-avoid">
+          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none transform translate-x-10 -translate-y-10">
+            <svg className="w-48 h-48 text-slate-900" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.95 1.47-8.95 4.47L2.95 15.47 12 11zm11 1.53l-2.95 1.47L12 18.53 3.95 14.53 1 16l11 5.5 11-5.5-1.05-1.47z"/></svg>
+          </div>
+          <div className="flex items-center gap-3 mb-6 relative z-10">
+            <div className="p-2 bg-brand-50 rounded-xl border border-brand-200">
+              <SectionIcon type="rocket" />
             </div>
-            <p className="text-slate-500 ml-1">How the paradigm has shifted since your last check-in.</p>
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">The 30-Second Catch-Up</h2>
           </div>
-          
-          <div className="grid md:grid-cols-2 gap-px bg-slate-100">
-             {report.thenVsNow.map((item, idx) => (
-               <React.Fragment key={idx}>
-                 <div className="bg-white p-6 md:col-span-2 grid md:grid-cols-2 gap-6 relative group hover:bg-slate-50/50 transition-colors break-inside-avoid">
-                    <div className="space-y-2 relative">
-                      <div className="text-xs font-bold text-slate-400 uppercase mb-1">The Old Way</div>
-                      <div className="flex items-start gap-3">
-                         <div className="mt-1.5 w-2 h-2 rounded-full bg-slate-300"></div>
-                         <p className="text-slate-500 line-through decoration-slate-300 decoration-2 text-lg">{item.old}</p>
-                      </div>
-                    </div>
-                    <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full items-center justify-center text-slate-400 z-10 border border-slate-200 shadow-sm no-print">
-                      →
-                    </div>
-                    <div className="space-y-2">
-                       <div className="text-xs font-bold text-brand-600 uppercase mb-1">The New Way</div>
-                       <div className="flex items-start gap-3">
-                         <div className="mt-1.5 w-2 h-2 rounded-full bg-brand-500 shadow-[0_0_8px_rgba(14,165,233,0.4)]"></div>
-                         <div>
-                            <p className="text-slate-900 font-bold text-lg">{item.new}</p>
-                            <p className="text-brand-600 text-sm mt-1 font-medium">{item.benefit}</p>
-                         </div>
-                      </div>
-                    </div>
-                 </div>
-               </React.Fragment>
-             ))}
-          </div>
+          <p className="text-xl text-slate-700 leading-relaxed font-medium relative z-10">
+            {report.catchUp}
+          </p>
         </div>
-      )}
 
-      {/* 📅 Timeline */}
-      <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-2 bg-cyan-50 rounded-xl border border-cyan-200">
-             <SectionIcon type="calendar" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900">Timeline of Evolution</h2>
-        </div>
-        
-        <div className="relative border-l-2 border-slate-200 ml-3 md:ml-6 space-y-8 md:space-y-12 pb-4">
-          {report.timeline.map((row, idx) => (
-            <div key={idx} className="relative pl-8 md:pl-12 group timeline-item">
-              <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-white border-2 border-cyan-500 group-hover:bg-cyan-500 group-hover:scale-110 transition-all"></div>
-              
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 md:gap-8">
-                <div className="mb-1 md:mb-0 md:w-32 flex-shrink-0">
-                  <span className="inline-block py-1 px-2 rounded bg-slate-100 text-cyan-700 text-xs font-mono font-bold border border-slate-200">
-                    {row.date}
-                  </span>
-                </div>
-                <div className="flex-grow">
-                   <h4 className="text-lg font-bold text-slate-900 mb-2">{row.event}</h4>
-                   <p className="text-slate-600 text-sm leading-relaxed">{row.impact}</p>
-                </div>
+        {/* 🏆 Big Three */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {report.bigThree.map((item, index) => (
+            <div key={index} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col break-inside-avoid">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-yellow-600 font-bold text-sm border border-slate-200">
+                  {index + 1}
+                </span>
+                <div className="h-px bg-slate-200 flex-grow"></div>
               </div>
+              <h3 className="font-bold text-lg text-slate-900 mb-3">{item.title}</h3>
+              <p className="text-slate-600 text-sm leading-relaxed flex-grow">{item.description}</p>
             </div>
           ))}
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {report.terminology.length > 0 && (
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm break-inside-avoid">
-             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-pink-50 rounded-xl border border-pink-200">
-                <SectionIcon type="brain" />
+        {/* 🔄 Then vs Now (Paradigm Shift) */}
+        {report.thenVsNow && report.thenVsNow.length > 0 && (
+          <div className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-xl break-inside-avoid">
+            <div className="p-8 pb-4 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-indigo-50 rounded-xl border border-indigo-200">
+                  <SectionIcon type="sync" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900">Then vs. Now</h2>
               </div>
-              <h2 className="text-xl font-bold text-slate-900">New Terminology</h2>
+              <p className="text-slate-500 ml-1">How the paradigm has shifted since your last check-in.</p>
             </div>
-            <ul className="space-y-5">
-              {report.terminology.map((item, idx) => (
-                <li key={idx} className="flex gap-4 group">
-                   <div className="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 flex-shrink-0 group-hover:scale-150 transition-transform" />
-                   <div>
-                     <span className="block font-bold text-slate-800 text-lg mb-1">{item.term}</span>
-                     <span className="text-sm text-slate-600 leading-relaxed">{item.definition}</span>
+            
+            <div className="grid md:grid-cols-2 gap-px bg-slate-100">
+               {report.thenVsNow.map((item, idx) => (
+                 <React.Fragment key={idx}>
+                   <div className="bg-white p-6 md:col-span-2 grid md:grid-cols-2 gap-6 relative break-inside-avoid">
+                      <div className="space-y-2 relative">
+                        <div className="text-xs font-bold text-slate-400 uppercase mb-1">The Old Way</div>
+                        <div className="flex items-start gap-3">
+                           <div className="mt-1.5 w-2 h-2 rounded-full bg-slate-300"></div>
+                           <p className="text-slate-500 line-through decoration-slate-300 decoration-2 text-lg">{item.old}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                         <div className="text-xs font-bold text-brand-600 uppercase mb-1">The New Way</div>
+                         <div className="flex items-start gap-3">
+                           <div className="mt-1.5 w-2 h-2 rounded-full bg-brand-500"></div>
+                           <div>
+                              <p className="text-slate-900 font-bold text-lg">{item.new}</p>
+                              <p className="text-brand-600 text-sm mt-1 font-medium">{item.benefit}</p>
+                           </div>
+                        </div>
+                      </div>
                    </div>
-                </li>
-              ))}
-            </ul>
+                 </React.Fragment>
+               ))}
+            </div>
           </div>
         )}
 
-        <div className={`bg-gradient-to-br from-green-50 to-white rounded-3xl p-8 border border-green-100 flex flex-col shadow-sm break-inside-avoid ${report.terminology.length === 0 ? 'md:col-span-2' : ''}`}>
-           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-green-100 rounded-xl border border-green-200">
-              <SectionIcon type="flash" />
+        {/* 📅 Timeline */}
+        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl break-inside-avoid">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-2 bg-cyan-50 rounded-xl border border-cyan-200">
+               <SectionIcon type="calendar" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900">The New Standard</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Timeline of Evolution</h2>
           </div>
-          <div className="text-slate-700 leading-relaxed flex-grow text-lg space-y-4">
-             {report.currentStand.split('\n').map((para, i) => (
-               <p key={i}>{para}</p>
-             ))}
+          
+          <div className="relative border-l-2 border-slate-200 ml-3 md:ml-6 space-y-8 md:space-y-12 pb-4">
+            {report.timeline.map((row, idx) => (
+              <div key={idx} className="relative pl-8 md:pl-12 break-inside-avoid">
+                <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-white border-2 border-cyan-500"></div>
+                
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 md:gap-8">
+                  <div className="mb-1 md:mb-0 md:w-32 flex-shrink-0">
+                    <span className="inline-block py-1 px-2 rounded bg-slate-100 text-cyan-700 text-xs font-mono font-bold border border-slate-200">
+                      {row.date}
+                    </span>
+                  </div>
+                  <div className="flex-grow">
+                     <h4 className="text-lg font-bold text-slate-900 mb-2">{row.event}</h4>
+                     <p className="text-slate-600 text-sm leading-relaxed">{row.impact}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* Sources Footer */}
-      {report.sources && report.sources.length > 0 && (
-        <div className="pt-8 border-t border-slate-200 break-inside-avoid">
-           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Sources & Further Reading</h4>
-           <div className="flex flex-wrap gap-2">
-             {report.sources.map((source, idx) => (
-               <a 
-                key={idx} 
-                href={source.uri} 
-                target="_blank" 
-                rel="noreferrer"
-                className="text-xs text-brand-600 hover:text-white hover:bg-brand-600 bg-white px-3 py-2 rounded-lg border border-slate-200 transition-all flex items-center gap-2"
-               >
-                 <span>🔗</span>
-                 {source.title || new URL(source.uri || '').hostname}
-               </a>
-             ))}
-           </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {report.terminology.length > 0 && (
+            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm break-inside-avoid">
+               <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-pink-50 rounded-xl border border-pink-200">
+                  <SectionIcon type="brain" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">New Terminology</h2>
+              </div>
+              <ul className="space-y-5">
+                {report.terminology.map((item, idx) => (
+                  <li key={idx} className="flex gap-4">
+                     <div className="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5 flex-shrink-0" />
+                     <div>
+                       <span className="block font-bold text-slate-800 text-lg mb-1">{item.term}</span>
+                       <span className="text-sm text-slate-600 leading-relaxed">{item.definition}</span>
+                     </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className={`bg-gradient-to-br from-green-50 to-white rounded-3xl p-8 border border-green-100 flex flex-col shadow-sm break-inside-avoid ${report.terminology.length === 0 ? 'md:col-span-2' : ''}`}>
+             <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-green-100 rounded-xl border border-green-200">
+                <SectionIcon type="flash" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-900">The New Standard</h2>
+            </div>
+            <div className="text-slate-700 leading-relaxed flex-grow text-lg space-y-4">
+               {report.currentStand.split('\n').map((para, i) => (
+                 <p key={i}>{para}</p>
+               ))}
+            </div>
+          </div>
         </div>
-      )}
 
-      {/* Footer Branding (Print Only) */}
-      <div className="hidden print:block mt-12 pt-4 border-t text-center text-[10px] text-slate-400">
-        This briefing was intelligently curated by ReSync using the Gemini 2.5 Flash API.
+        {/* Sources Footer */}
+        {report.sources && report.sources.length > 0 && (
+          <div className="pt-8 border-t border-slate-200 break-inside-avoid">
+             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Sources & Further Reading</h4>
+             <div className="flex flex-wrap gap-2">
+               {report.sources.map((source, idx) => (
+                 <a 
+                  key={idx} 
+                  href={source.uri} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="text-xs text-brand-600 bg-white px-3 py-2 rounded-lg border border-slate-200 flex items-center gap-2"
+                 >
+                   <span>🔗</span>
+                   {source.title || new URL(source.uri || '').hostname}
+                 </a>
+               ))}
+             </div>
+          </div>
+        )}
+
+        {/* Footer Branding (PDF Only) */}
+        <div className="hidden print-only-header block mt-12 pt-4 border-t text-center text-[10px] text-slate-400">
+          This briefing was intelligently curated by ReSync using the Gemini 2.5 Flash API.
+        </div>
       </div>
+      
+      {/* Internal Style for Print Layout */}
+      <style>{`
+        @media print {
+          .print-only-header { display: block !important; }
+        }
+        /* Extra assurance for html2pdf to show these when generating */
+        .pdf-header-visible { display: block !important; }
+      `}</style>
+
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { AppState, ParsedReport } from './types';
 import { generateReport } from './services/geminiService';
@@ -8,10 +9,12 @@ import { LoadingState } from './components/LoadingState';
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
   const [report, setReport] = useState<ParsedReport | null>(null);
+  const [currentTopic, setCurrentTopic] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async (topic: string, sinceDate: string) => {
     setAppState(AppState.LOADING);
+    setCurrentTopic(topic);
     setError(null);
     try {
       const data = await generateReport({ topic, sinceDate });
@@ -27,6 +30,7 @@ const App: React.FC = () => {
   const handleReset = () => {
     setAppState(AppState.IDLE);
     setReport(null);
+    setCurrentTopic('');
     setError(null);
   };
 
@@ -51,7 +55,7 @@ const App: React.FC = () => {
         )}
 
         {appState === AppState.SUCCESS && report && (
-          <ReportDisplay report={report} onReset={handleReset} />
+          <ReportDisplay report={report} topic={currentTopic} onReset={handleReset} />
         )}
 
         {appState === AppState.ERROR && (
