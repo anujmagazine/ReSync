@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppState } from '../types';
 
 interface SearchFormProps {
@@ -23,10 +23,22 @@ const EXAMPLE_TOPICS = [
 export const SearchForm: React.FC<SearchFormProps> = ({ onGenerate, appState }) => {
   const [topic, setTopic] = useState('');
   const [sinceDate, setSinceDate] = useState('');
+  const [dateError, setDateError] = useState<string | null>(null);
+
+  const today = new Date().toISOString().split('T')[0];
+
+  // Validate date whenever it changes
+  useEffect(() => {
+    if (sinceDate && sinceDate > today) {
+      setDateError("The past hasn't happened yet! Please select a date in the past or today.");
+    } else {
+      setDateError(null);
+    }
+  }, [sinceDate, today]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (topic && sinceDate) {
+    if (topic && sinceDate && !dateError) {
       onGenerate(topic, sinceDate);
     }
   };
@@ -86,18 +98,31 @@ export const SearchForm: React.FC<SearchFormProps> = ({ onGenerate, appState }) 
             id="date"
             type="date"
             value={sinceDate}
+            max={today}
             onChange={(e) => setSinceDate(e.target.value)}
             disabled={isLoading}
-            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all focus:bg-white"
+            className={`w-full px-4 py-3 border rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all focus:bg-white
+              ${dateError 
+                ? 'bg-red-50 border-red-300 focus:ring-red-500' 
+                : 'bg-slate-50 border-slate-200 focus:ring-brand-500'
+              }`}
             required
           />
+          {dateError && (
+            <p className="text-xs font-semibold text-red-600 animate-fade-in flex items-center gap-1.5 mt-1">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+              {dateError}
+            </p>
+          )}
         </div>
 
         <button
           type="submit"
-          disabled={isLoading || !topic || !sinceDate}
+          disabled={isLoading || !topic || !sinceDate || !!dateError}
           className={`w-full py-4 px-6 rounded-xl font-bold text-lg text-white transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg
-            ${isLoading 
+            ${isLoading || !!dateError || !topic || !sinceDate
               ? 'bg-slate-300 cursor-not-allowed opacity-70' 
               : 'bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 shadow-brand-500/30'
             }`}
